@@ -1,0 +1,38 @@
+name: Tests
+
+on:
+  push:
+    branches: master
+  pull_request:
+    branches: master
+
+jobs:
+  build:
+    name: Build (${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Cache Conda
+      uses: actions/cache@v1
+      env:
+        # Increase this value to reset cache if environment.yml has not changed
+        CACHE_NUMBER: 0
+      with:
+        path: ~/conda_pkgs_dir
+        key: conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}
+
+    - uses: conda-incubator/setup-miniconda@v2
+      with:
+        auto-update-conda: false
+        environment-file: environment.yml
+        condarc-file: devtools/conda-envs/.condarc
+        activate-environment: arkbreeder-dev
+        conda list
+
+    - name: PyTest
+      shell: bash -l {0}
+      run: |
+        pytest -rws -v --cov=arkbreeder --color=yes tests/
